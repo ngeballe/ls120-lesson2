@@ -1,0 +1,8 @@
+What is the method lookup path and how is it important?
+
+It's the chain of classes and modules that Ruby uses to look up methods called on an object. It goes:
+
+1. Object's class
+2. modules included in the class, from last created in the code to first
+3. Superclass (the class that the object's class inherits from)
+4. modules included in the superclass
