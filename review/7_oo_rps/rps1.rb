@@ -1,24 +1,3 @@
-require 'pry'
-
-# Rock, Paper, Scissors is a 2-player game where players take turns making a move: choosing rock, paper, or scissors. The moves are compared to determine the winner, according to the rules:
-# - rock beats scissors
-# - scissors beats paper
-# - paper beats rock
-# If players choose the same move, it's a tie.
-
-# Nouns: game, player, move, rock, paper, scissors, winner, tie
-# Verbs: taker, compare, beat, choose
-
-# Nouns: player, move, rule
-# Verbs: choose, compare
-
-# Player
-# - choose
-# Move
-# Rule
-
-# - compare
-
 class Player
   attr_accessor :move, :name
 
@@ -36,7 +15,7 @@ class Human < Player
       break unless n.empty?
       puts "Sorry, you must enter a value."
     end
-    self.name = n  
+    self.name = n
   end
 
   def choose
@@ -62,14 +41,14 @@ class Computer < Player
 end
 
 class Move
-  VALUES = %w(rock paper scissors)
+  VALUES = %w[rock paper scissors]
 
   attr_reader :value
 
   def initialize(value)
     @value = value
   end
-  
+
   def scissors?
     @value == 'scissors'
   end
@@ -84,8 +63,8 @@ class Move
 
   def >(other_move)
     (rock? && other_move.scissors?) ||
-    (scissors? && other_move.paper?) ||
-    (paper? && other_move.rock?)
+      (scissors? && other_move.paper?) ||
+      (paper? && other_move.rock?)
   end
 
   def <(other_move)
@@ -109,10 +88,12 @@ class RPSGame
     puts "Welcome to Rock, Paper, Scissors!"
   end
 
-  def display_winner
+  def display_moves
     puts "#{human.name} chose #{human.move}."
     puts "#{computer.name} chose #{computer.move}."
+  end
 
+  def display_winner
     if human.move > computer.move
       puts "#{human.name} won!"
     elsif human.move < computer.move
@@ -131,10 +112,10 @@ class RPSGame
     loop do
       puts "Would you like to play again? (y/n)"
       answer = gets.chomp
-      break if %w(y n).include?(answer.downcase)
+      break if %w[y n].include?(answer.downcase)
       puts "Sorry, must be y or n"
     end
-    answer == 'y'
+    answer.downcase == 'y'
   end
 
   def play
@@ -143,10 +124,11 @@ class RPSGame
     loop do
       human.choose
       computer.choose
+      display_moves
       display_winner
       break unless play_again?
     end
-    
+
     display_goodbye_message
   end
 end

@@ -46,7 +46,7 @@
 class Move
   attr_accessor :value
 
-  VALUES = %w(rock paper scissors).freeze
+  VALUES = %w[rock paper scissors].freeze
 
   def initialize(value)
     @value = value
@@ -113,7 +113,7 @@ end
 
 class Computer < Player
   def set_name
-    self.name = %w(R2D2 Hal).sample
+    self.name = %w[R2D2 Hal].sample
   end
 
   def choose
@@ -157,7 +157,7 @@ class RPSGame
     loop do
       puts "Do you want to play again? (y/n)"
       answer = gets.chomp
-      break if %w(y n).include? answer.downcase
+      break if %w[y n].include? answer.downcase
       puts "Sorry, must be 'y' or 'n'"
     end
     answer == "y"
