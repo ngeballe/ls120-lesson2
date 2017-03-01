@@ -4,3 +4,7 @@ cost: the parts of player methods that are the same have to be repeated in subcl
 refactoring to have a Move classs
 + it makes the code in the RPSGame classs more streamlined
 - it requires new methods: e.g., we now convert strings to Move objects when creating Move objects, but then convert them back to strings when the displaying the moves in display_winner.
+
+creating separate classes for rock, paper, scissors, lizard, spock:
++ it streamlines the comparisions
+- you have to convert string value to class, then back(?)

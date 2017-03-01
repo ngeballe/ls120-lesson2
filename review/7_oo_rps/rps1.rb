@@ -1,3 +1,5 @@
+require 'pry'
+
 class Player
   attr_accessor :move, :name, :score
 
@@ -8,9 +10,9 @@ class Player
 
   def display_score
     if score == 1
-      puts "#{name} has 1 point"
+      puts "#{name} has 1 point."
     else
-      puts "#{name} has #{score} points"
+      puts "#{name} has #{score} points."
     end
   end
 end
@@ -55,53 +57,17 @@ class Move
   attr_reader :value
 
   def initialize(value)
-    @value = value
-  end
-
-  def rock?
-    @value == 'rock'
-  end
-
-  def paper?
-    @value == 'paper'
-  end
-
-  def scissors?
-    @value == 'scissors'
-  end
-
-  def lizard?
-    @value == 'lizard'
-  end
-
-  def spock?
-    @value == 'spock'
+    @value = case value
+             when 'rock' then Rock.new
+             when 'paper' then Paper.new
+             when 'scissors' then Scissors.new
+             when 'lizard' then Lizard.new
+             when 'spock' then Spock.new
+             end
   end
 
   def >(other_move)
-    # [
-    #   %w[rock scissors],
-    #   %w[scissors paper],
-    #   %w[paper rock],
-    #   %w[paper spock],
-    #   %w[spock scissors],
-    #   %w[spock rock],
-    #   %w[lizard spock],
-    #   %w[lizard paper],
-    #   %w[scissors lizard],
-    #   %w[rock lizard]
-    # ].include?([value, other_move.value])
-
-    (rock? && other_move.scissors?) ||
-      (scissors? && other_move.paper?) ||
-      (paper? && other_move.rock?) ||
-      (paper? && other_move.spock?) ||
-      (spock? && other_move.scissors?) ||
-      (spock? && other_move.rock?) ||
-      (lizard? && other_move.spock?) ||
-      (lizard? && other_move.paper?) ||
-      (scissors? && other_move.lizard?) ||
-      (rock? && other_move.lizard?)
+    value > other_move.value
   end
 
   def <(other_move)
@@ -109,12 +75,62 @@ class Move
   end
 
   def to_s
-    @value
+    @value.to_s
+  end
+end
+
+class Rock
+  def >(other)
+    [Scissors, Lizard].include?(other.class)
+  end
+
+  def to_s
+    'rock'
+  end
+end
+
+class Paper
+  def >(other)
+    [Rock, Spock].include?(other.class)
+  end
+
+  def to_s
+    'paper'
+  end
+end
+
+class Scissors
+  def >(other)
+    [Paper, Lizard].include?(other.class)
+  end
+
+  def to_s
+    'scissors'
+  end
+end
+
+class Lizard
+  def >(other)
+    [Paper, Spock].include?(other.class)
+  end
+
+  def to_s
+    'lizard'
+  end
+end
+
+class Spock
+  def >(other)
+    [Rock, Scissors].include?(other.class)
+  end
+
+  def to_s
+    'spock'
   end
 end
 
 class RPSGame
-  WINNING_SCORE = 10
+  WINNING_SCORE = 3
 
   attr_accessor :human, :computer
 
@@ -187,21 +203,28 @@ class RPSGame
     answer.downcase == 'y'
   end
 
+  def reset_scores
+    human.score = 0
+    computer.score = 0
+  end
+
+  def play_round
+    human.choose
+    computer.choose
+    display_moves
+    display_round_winner
+    update_scores
+    display_scores
+  end
+
   def play
     display_welcome_message
 
     loop do
-      loop do
-        human.choose
-        computer.choose
-        display_moves
-        display_round_winner
-        update_scores
-        display_scores
-        break if game_winner
-      end
+      play_round until game_winner
       display_game_winner
       break unless play_again?
+      reset_scores
     end
 
     display_goodbye_message
