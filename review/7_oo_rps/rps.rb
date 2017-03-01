@@ -57,15 +57,6 @@ class Computer < Player
 end
 
 class Move
-  def initialize
-    
-  end
-end
-
-class Rule
-  def initialize
-    
-  end
 end
 
 class RPSGame
