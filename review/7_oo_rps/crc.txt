@@ -1,0 +1,29 @@
+#Player
+Subclasses: Human, Computer
+- has a name
+- has a move
+Collaborators: Move
+
+#Human
+Superclass: Player
+Responsibilities:
+- can choose a move
+Collaborators: Move
+
+#Computer
+Superclass: Player
+Responsibilities:
+- can choose a move
+Collaborators: Move
+
+#Move
+- has a value
+- can determine if greater than
+- can determine if less than
+- can return a string representation
+
+#RPSGame
+- has a human player
+- has a computer player
+- can kick off a new game
+Collaborators: Human, Computer
