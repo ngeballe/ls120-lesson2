@@ -1,5 +1,5 @@
 
-def get_cumulative_weigths(hash)
+def get_cumulative_weights(hash)
   # array.each_index.map { |index| array[0..index].reduce(:+) }
   total_so_far = 0
   hash.each do |k, v|
@@ -17,7 +17,7 @@ results = []
 weights = { 'Huskies' => 0.42, 'Warriors' => 0.45, 'Suns' => 0.09, 'Lakeside' => 0.039, 'Caltech' => 0.001 }
 p weights
 
-cumulative_weights = get_cumulative_weigths(weights)
+cumulative_weights = get_cumulative_weights(weights)
 p cumulative_weights
 
 1.times do

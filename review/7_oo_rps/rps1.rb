@@ -30,7 +30,7 @@ class Human < Player
   def choose
     choice = nil
     loop do
-      puts 'Please choose rock, paper, or scissors:'
+      puts 'Please choose rock, paper, scissors, lizard, or spock:'
       choice = gets.chomp
       break if Move::VALUES.include?(choice)
       puts 'Sorry, invalid choice.'
@@ -50,16 +50,12 @@ class Computer < Player
 end
 
 class Move
-  VALUES = %w[rock paper scissors]
+  VALUES = %w[rock paper scissors lizard spock]
 
   attr_reader :value
 
   def initialize(value)
     @value = value
-  end
-
-  def scissors?
-    @value == 'scissors'
   end
 
   def rock?
@@ -70,10 +66,42 @@ class Move
     @value == 'paper'
   end
 
+  def scissors?
+    @value == 'scissors'
+  end
+
+  def lizard?
+    @value == 'lizard'
+  end
+
+  def spock?
+    @value == 'spock'
+  end
+
   def >(other_move)
+    # [
+    #   %w[rock scissors],
+    #   %w[scissors paper],
+    #   %w[paper rock],
+    #   %w[paper spock],
+    #   %w[spock scissors],
+    #   %w[spock rock],
+    #   %w[lizard spock],
+    #   %w[lizard paper],
+    #   %w[scissors lizard],
+    #   %w[rock lizard]
+    # ].include?([value, other_move.value])
+
     (rock? && other_move.scissors?) ||
       (scissors? && other_move.paper?) ||
-      (paper? && other_move.rock?)
+      (paper? && other_move.rock?) ||
+      (paper? && other_move.spock?) ||
+      (spock? && other_move.scissors?) ||
+      (spock? && other_move.rock?) ||
+      (lizard? && other_move.spock?) ||
+      (lizard? && other_move.paper?) ||
+      (scissors? && other_move.lizard?) ||
+      (rock? && other_move.lizard?)
   end
 
   def <(other_move)
@@ -96,7 +124,7 @@ class RPSGame
   end
 
   def display_welcome_message
-    puts "Welcome to Rock, Paper, Scissors!"
+    puts "Welcome to Rock, Paper, Scissors, Lizard, Spock!"
   end
 
   def display_moves
@@ -145,7 +173,7 @@ class RPSGame
   end
 
   def display_goodbye_message
-    puts "Goodbye! Thanks for playing Rock, Paper, Scissors!"
+    puts "Goodbye! Thanks for playing Rock, Paper, Scissors, Lizard, Spock!"
   end
 
   def play_again?
