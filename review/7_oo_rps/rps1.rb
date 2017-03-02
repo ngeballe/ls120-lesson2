@@ -1,11 +1,10 @@
-require 'pry'
-
 class Player
-  attr_accessor :move, :name, :score
+  attr_accessor :move, :name, :score, :move_history
 
   def initialize
     set_name
     @score = 0
+    @move_history = []
   end
 
   def display_score
@@ -14,6 +13,18 @@ class Player
     else
       puts "#{name} has #{score} points."
     end
+  end
+
+  def update_move_history
+    move_history << move
+  end
+
+  def display_move_history
+    print "#{name}'s move history: "
+    moves_numbered = @move_history.map.with_index do |move, index|
+      "#{index + 1}. #{move}"
+    end
+    puts moves_numbered.join(', ')
   end
 end
 
@@ -130,7 +141,7 @@ class Spock
 end
 
 class RPSGame
-  WINNING_SCORE = 3
+  WINNING_SCORE = 10
 
   attr_accessor :human, :computer
 
@@ -208,9 +219,15 @@ class RPSGame
     computer.score = 0
   end
 
+  def update_and_display_move_histories
+    [human, computer].each(&:update_move_history)
+    [human, computer].each(&:display_move_history)
+  end
+
   def play_round
     human.choose
     computer.choose
+    update_and_display_move_histories
     display_moves
     display_round_winner
     update_scores
