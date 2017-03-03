@@ -1,10 +1,11 @@
+require 'pry'
+
 class Player
   attr_accessor :move, :name, :score, :move_history
 
   def initialize
     set_name
-    @score = 0
-    @move_history = []
+    reset_data
   end
 
   def display_score
@@ -25,6 +26,11 @@ class Player
       "#{index + 1}. #{move}"
     end
     puts moves_numbered.join(', ')
+  end
+
+  def reset_data
+    @score = 0
+    @move_history = []
   end
 end
 
@@ -53,12 +59,97 @@ class Human < Player
 end
 
 class Computer < Player
+  def initialize
+    super
+    reset_move_probabilities
+  end
+
   def set_name
     self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
   end
 
   def choose
-    self.move = Move.new(Move::VALUES.sample)
+    move_value = if move_history.empty?
+                   Move::VALUES.sample
+                 else
+                   move_value_based_on_probabilities
+                 end
+    self.move = Move.new(move_value)
+  end
+
+  def move_value_based_on_probabilities
+    # adjust to get thresholds for choosing
+    # [0.2, 0.2, 0.4, 0.1, 0.1] => [0.2, 0.4, 0.8, 0.9, 1.0]
+    move_thresholds = {}
+    final_probabilities.each_with_index do |(move_value, _), index|
+      move_thresholds[move_value] = \
+        final_probabilities.values[0..index].reduce(:+)
+    end
+    random_number = rand
+    Move::VALUES.detect { |mv| random_number < move_thresholds[mv] }
+  end
+
+  def final_probabilities
+    result = {}
+    probabilities = @move_probabilities.map { |_, v| v.adjusted_probability }
+    # make them add up to 1
+    normalized_probabilities = probabilities.map do |element|
+      element / probabilities.reduce(:+).to_f
+    end
+    @move_probabilities.each_with_index do |(move_value, _), index|
+      result[move_value] = normalized_probabilities[index]
+    end
+    result
+  end
+
+  def update_move_probabilities(round_winner)
+    move_value = move.value.to_s
+    if round_winner == self
+      @move_probabilities[move_value].wins += 1
+    elsif round_winner && round_winner != self
+      @move_probabilities[move_value].losses += 1
+    end
+  end
+
+  def reset_data
+    super
+    reset_move_probabilities
+  end
+
+  private
+
+  def reset_move_probabilities
+    @move_probabilities = {}
+    Move::VALUES.each do |move_value|
+      @move_probabilities[move_value] = MoveProbability.new(move_value)
+    end
+  end
+end
+
+class MoveProbability
+  WEIGHT_GIVEN_TO_CURRENT_GAME = 0.2
+
+  attr_accessor :wins, :losses
+  attr_reader :adjusted_probability
+
+  def initialize
+    @wins = 0
+    @losses = 0
+    @base_rate = 1.0 / Move::VALUES.size
+  end
+
+  def probability
+    return nil if @wins == 0 && @losses == 0
+    @wins.to_f / (@wins + @losses)
+  end
+
+  def adjusted_probability
+    if probability.nil?
+      @base_rate
+    else
+      @base_rate * (1 - WEIGHT_GIVEN_TO_CURRENT_GAME) + \
+        probability * WEIGHT_GIVEN_TO_CURRENT_GAME
+    end
   end
 end
 
@@ -214,14 +305,15 @@ class RPSGame
     answer.downcase == 'y'
   end
 
-  def reset_scores
-    human.score = 0
-    computer.score = 0
+  def reset_game
+    human.reset_data
+    computer.reset_data
   end
 
   def update_and_display_move_histories
     [human, computer].each(&:update_move_history)
     [human, computer].each(&:display_move_history)
+    computer.update_move_probabilities(round_winner)
   end
 
   def play_round
@@ -241,7 +333,7 @@ class RPSGame
       play_round until game_winner
       display_game_winner
       break unless play_again?
-      reset_scores
+      reset_game
     end
 
     display_goodbye_message
