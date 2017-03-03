@@ -35,17 +35,6 @@ class Player
 end
 
 class Human < Player
-  def set_name
-    n = ''
-    loop do
-      puts "What's your name?"
-      n = gets.chomp
-      break unless n.empty?
-      puts "Sorry, you must enter a value."
-    end
-    self.name = n
-  end
-
   def choose
     choice = nil
     loop do
@@ -56,16 +45,25 @@ class Human < Player
     end
     self.move = Move.new(choice)
   end
+
+  private
+
+  def set_name
+    n = ''
+    loop do
+      puts "What's your name?"
+      n = gets.chomp
+      break unless n.empty?
+      puts "Sorry, you must enter a value."
+    end
+    self.name = n
+  end
 end
 
 class Computer < Player
   def initialize
     super
     reset_move_probabilities
-  end
-
-  def set_name
-    self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
   end
 
   def choose
@@ -75,6 +73,26 @@ class Computer < Player
                    move_value_based_on_probabilities
                  end
     self.move = Move.new(move_value)
+  end
+
+  def reset_data
+    super
+    reset_move_probabilities
+  end
+
+  def update_move_probabilities(round_winner)
+    move_value = move.to_s
+    if round_winner == self
+      @move_probabilities[move_value].wins += 1
+    elsif round_winner && round_winner != self
+      @move_probabilities[move_value].losses += 1
+    end
+  end
+
+  private
+
+  def set_name
+    self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
   end
 
   def move_value_based_on_probabilities
@@ -102,53 +120,10 @@ class Computer < Player
     result
   end
 
-  def update_move_probabilities(round_winner)
-    move_value = move.value.to_s
-    if round_winner == self
-      @move_probabilities[move_value].wins += 1
-    elsif round_winner && round_winner != self
-      @move_probabilities[move_value].losses += 1
-    end
-  end
-
-  def reset_data
-    super
-    reset_move_probabilities
-  end
-
-  private
-
   def reset_move_probabilities
     @move_probabilities = {}
     Move::VALUES.each do |move_value|
-      @move_probabilities[move_value] = MoveProbability.new(move_value)
-    end
-  end
-end
-
-class MoveProbability
-  WEIGHT_GIVEN_TO_CURRENT_GAME = 0.2
-
-  attr_accessor :wins, :losses
-  attr_reader :adjusted_probability
-
-  def initialize
-    @wins = 0
-    @losses = 0
-    @base_rate = 1.0 / Move::VALUES.size
-  end
-
-  def probability
-    return nil if @wins == 0 && @losses == 0
-    @wins.to_f / (@wins + @losses)
-  end
-
-  def adjusted_probability
-    if probability.nil?
-      @base_rate
-    else
-      @base_rate * (1 - WEIGHT_GIVEN_TO_CURRENT_GAME) + \
-        probability * WEIGHT_GIVEN_TO_CURRENT_GAME
+      @move_probabilities[move_value] = MoveProbability.new
     end
   end
 end
@@ -178,6 +153,35 @@ class Move
 
   def to_s
     @value.to_s
+  end
+end
+
+class MoveProbability
+  WEIGHT_GIVEN_TO_CURRENT_GAME = 0.2
+  BASE_RATE = 1.0 / Move::VALUES.size
+
+  attr_accessor :wins, :losses
+  attr_reader :adjusted_probability
+
+  def initialize
+    @wins = 0
+    @losses = 0
+  end
+
+  def adjusted_probability
+    if probability.nil?
+      BASE_RATE
+    else
+      BASE_RATE * (1 - WEIGHT_GIVEN_TO_CURRENT_GAME) + \
+        probability * WEIGHT_GIVEN_TO_CURRENT_GAME
+    end
+  end
+
+  private
+
+  def probability
+    return nil if @wins == 0 && @losses == 0
+    @wins.to_f / (@wins + @losses)
   end
 end
 
@@ -240,6 +244,21 @@ class RPSGame
     @human = Human.new
     @computer = Computer.new
   end
+
+  def play
+    display_welcome_message
+
+    loop do
+      play_round until game_winner
+      display_game_winner
+      break unless play_again?
+      reset_game
+    end
+
+    display_goodbye_message
+  end
+
+  private
 
   def display_welcome_message
     puts "Welcome to Rock, Paper, Scissors, Lizard, Spock!"
@@ -324,19 +343,6 @@ class RPSGame
     display_round_winner
     update_scores
     display_scores
-  end
-
-  def play
-    display_welcome_message
-
-    loop do
-      play_round until game_winner
-      display_game_winner
-      break unless play_again?
-      reset_game
-    end
-
-    display_goodbye_message
   end
 end
 
