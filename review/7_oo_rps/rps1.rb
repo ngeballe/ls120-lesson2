@@ -94,6 +94,15 @@ class Computer < Player
     reset_move_probabilities
   end
 
+  def reset_move_probabilities
+    @move_probabilities = {}
+    Move::VALUES.each do |move_value|
+      base_rate = NAME_TO_BASE_RATES[name][move_value]
+      current_game_weight = NAME_TO_CURRENT_GAME_WEIGHT[name]
+      @move_probabilities[move_value] = MoveProbability.new(base_rate, current_game_weight)
+    end
+  end
+
   def update_move_probabilities(round_winner)
     move_value = move.to_s
     return if NAME_TO_CURRENT_GAME_WEIGHT[name].zero? 
@@ -108,52 +117,37 @@ class Computer < Player
     @move_probabilities.values.each(&:update_probability)
   end
 
+  def move_value_based_on_probabilities
+    # pick a random number as the decider
+    decider = rand
+    # get ranges for each value
+    move_values_to_ranges.keys.detect do |mv|
+      # range matches
+      move_values_to_ranges[mv].cover?(decider)
+    end
+  end
+
   private
+
+  def move_values_to_adjusted_probabilities
+    Hash[@move_probabilities.keys.zip(@move_probabilities.values.map(&:adjusted_probability))]
+  end
+
+  def move_values_to_ranges
+    keys = move_values_to_adjusted_probabilities.keys
+    values = move_values_to_adjusted_probabilities.values
+    ranges = values.map.with_index do |val, idx|
+      range_start = values[0...idx].reduce(0, :+)
+      range_end = values[0..idx].reduce(:+)
+      range_start..range_end
+    end
+    Hash[keys.zip(ranges)]
+  end
 
   def set_name
     ### TEMPORARY
     # self.name = NAMES.sample
     self.name = %w(Hal Sonny).sample
-  end
-
-  def move_value_based_on_probabilities
-    # adjust to get thresholds for choosing
-    # [0.2, 0.2, 0.4, 0.1, 0.1] => [0.2, 0.4, 0.8, 0.9, 1.0]
-    move_thresholds = {}
-    # probabilities = 
-    # probabilities = @move_probabilities
-    probabilities = Move::VALUES.zip(@move_probabilities.values.map(&:probability)).to_h
-    p probabilities
-    probabilities.each_with_index do |(move_value, _), index|
-      move_thresholds[move_value] = \
-        probabilities.values[0..index].reduce(:+)
-    end
-    random_number = rand
-    Move::VALUES.detect { |mv| random_number < move_thresholds[mv] }
-  end
-
-  # def final_probabilities
-  #   result = {}
-  #   probabilities = @move_probabilities.map { |_, v| v.adjusted_probability }
-  #   # make them add up to 1
-  #   normalized_probabilities = probabilities.map do |element|
-  #     element / probabilities.reduce(:+).to_f
-  #   end
-  #   @move_probabilities.each_with_index do |(move_value, _), index|
-  #     result[move_value] = normalized_probabilities[index]
-  #   end
-  #   result
-  # end
-
-  def reset_move_probabilities
-    base_rates = NAME_TO_BASE_RATES[name]   
-    current_game_weight = NAME_TO_CURRENT_GAME_WEIGHT[name] 
-
-    @move_probabilities = {}
-    base_rates.each do |move_value, base_rate|
-      @move_probabilities[move_value] = \
-        MoveProbability.new(base_rate, current_game_weight)
-    end
   end
 end
 
@@ -187,23 +181,23 @@ end
 
 class MoveProbability
   attr_accessor :wins, :losses
-  attr_reader :probability
-  # attr_reader :adjusted_probability
+  attr_reader :probability, :adjusted_probability
 
   def initialize(base_rate, current_game_weight)
     @base_rate = base_rate
     @success_rate_this_game = nil
     @current_game_weight = current_game_weight
+    @adjusted_probability = base_rate
     unless @current_game_weight.zero?
       @wins = 0
       @losses = 0
     end
   end
 
-  def update_probability
+  def adjust_probability
     # binding.pry
-    @probability = @probability * (1 - @current_game_weight) + \
-      success_rate_this_game * @current_game_weight
+    # @probability = @probability * (1 - @current_game_weight) + \
+    #  success_rate_this_game * @current_game_weight
   end
 
   # private
