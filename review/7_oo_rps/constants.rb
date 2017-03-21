@@ -1,18 +1,11 @@
-class Dog
-  BONE = "Ken Bone"
-
-  def initialize
-    x = Roger.new
+class Thing
+  def self.easy
+    puts "It's as easy as #{@@cv}!"
   end
+
+  private
+
+  @@cv = 3.14159
 end
 
-class Roger
-  # CONSTANT = Dog::BONE.size
-  @@class_var = Dog::BONE.size
-
-  def initialize
-    p @@class_var
-  end
-end
-
-p Roger.new
+p Thing.easy
