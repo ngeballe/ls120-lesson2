@@ -62,23 +62,23 @@ end
 
 class Computer < Player
   NAMES = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5', 'Deep Blue']
-    # ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5']
-    # if R2D2 = 0.5 rock, 0.5 spock, no updating
-    # Hal -- 0.3 rock, 0.3 paper, 0.3 scissors, 0.1 lizard, 0 spock, updating w/ weight 0.5
-    # if Chappie -- 0.1 rock, 0.4 scissors, 0.2 spock, 0.2 lizard, 0.1 paper, no updating
-    # Sonny -- 0.2 for all, updating w/ weight 1.0
-    # Number 5 -- 0.2 for all, no updating
-    # Deep Blue -- 0.2 for all, updating w/ weight 0.2
   NAME_TO_BASE_RATES = {
-    'R2D2' => { 'rock' => 0.5, 'paper' => 0, 'scissors' => 0, 'lizard' => 0, 'spock' => 0.5 },
-    'Hal' => { 'rock' => 0.3, 'paper' => 0.3, 'scissors' => 0.3, 'lizard' => 0.1, 'spock' => 0 },
-    'Chappie' => { 'rock' => 0.1, 'paper' => 0.1, 'scissors' => 0.4, 'lizard' => 0.2, 'spock' => 0.2 },
-    'Sonny' => { 'rock' => 0.2, 'paper' => 0.2, 'scissors' => 0.2, 'lizard' => 0.2, 'spock' => 0.2 },
-    'Number 5' => { 'rock' => 0.2, 'paper' => 0.2, 'scissors' => 0.2, 'lizard' => 0.2, 'spock' => 0.2 },
-    'Deep Blue' => { 'rock' => 0.2, 'paper' => 0.2, 'scissors' => 0.2, 'lizard' => 0.2, 'spock' => 0.2 }
+    'R2D2' => { 'rock' => 0.5, 'paper' => 0, 'scissors' => 0,
+                'lizard' => 0, 'spock' => 0.5 },
+    'Hal' => { 'rock' => 0.3, 'paper' => 0.3, 'scissors' => 0.3,
+               'lizard' => 0.1, 'spock' => 0 },
+    'Chappie' => { 'rock' => 0.1, 'paper' => 0.1, 'scissors' => 0.4,
+                   'lizard' => 0.2, 'spock' => 0.2 },
+    'Sonny' => { 'rock' => 0.2, 'paper' => 0.2, 'scissors' => 0.2,
+                 'lizard' => 0.2, 'spock' => 0.2 },
+    'Number 5' => { 'rock' => 0.2, 'paper' => 0.2, 'scissors' => 0.2,
+                    'lizard' => 0.2, 'spock' => 0.2 },
+    'Deep Blue' => { 'rock' => 0.2, 'paper' => 0.2, 'scissors' => 0.2,
+                     'lizard' => 0.2, 'spock' => 0.2 }
   }
-
-  NAME_TO_CURRENT_GAME_WEIGHT = { 'R2D2' => 0, 'Hal' => 0.5, 'Chappie' => 0, 'Sonny' => 1.0, 'Number 5' => 0, 'Deep Blue' => 0 } 
+  NAME_TO_CURRENT_GAME_WEIGHT = { 'R2D2' => 0, 'Hal' => 0.5,
+                                  'Chappie' => 0, 'Sonny' => 1.0,
+                                  'Number 5' => 0, 'Deep Blue' => 0 }
 
   def choose
     # move_value = if move_history.empty?
@@ -99,22 +99,37 @@ class Computer < Player
     Move::VALUES.each do |move_value|
       base_rate = NAME_TO_BASE_RATES[name][move_value]
       current_game_weight = NAME_TO_CURRENT_GAME_WEIGHT[name]
-      @move_probabilities[move_value] = MoveProbability.new(base_rate, current_game_weight)
+      mp = MoveProbability.new(base_rate, current_game_weight)
+      @move_probabilities[move_value] = mp
     end
   end
 
   def update_move_probabilities(round_winner)
     move_value = move.to_s
-    return if NAME_TO_CURRENT_GAME_WEIGHT[name].zero? 
-    
+    return if NAME_TO_CURRENT_GAME_WEIGHT[name].zero?
+
     if round_winner == self
       @move_probabilities[move_value].wins += 1
     elsif round_winner && round_winner != self
       @move_probabilities[move_value].losses += 1
     end
 
-    binding.pry
     @move_probabilities.values.each(&:update_probability)
+    # adjust the probabilities so they add up to 1
+
+    # set probabilities to normalized
+    @move_probabilities.values.each do |mp|
+      mp.adjusted_probability = normalized_probabilities.shift
+    end
+  end
+
+  def normalized_probabilities
+    sum_of_adjusted = adjusted_probabilities.reduce(:+)
+    adjusted_probabilities.map { |ap| ap.to_f / sum_of_adjusted }
+  end
+
+  def adjusted_probabilities
+    @move_probabilities.values.map(&:adjusted_probability)
   end
 
   def move_value_based_on_probabilities
@@ -130,13 +145,13 @@ class Computer < Player
   private
 
   def move_values_to_adjusted_probabilities
-    Hash[@move_probabilities.keys.zip(@move_probabilities.values.map(&:adjusted_probability))]
+    Hash[@move_probabilities.keys.zip(adjusted_probabilities)]
   end
 
   def move_values_to_ranges
     keys = move_values_to_adjusted_probabilities.keys
     values = move_values_to_adjusted_probabilities.values
-    ranges = values.map.with_index do |val, idx|
+    ranges = values.each_index.map do |idx|
       range_start = values[0...idx].reduce(0, :+)
       range_end = values[0..idx].reduce(:+)
       range_start..range_end
@@ -147,7 +162,12 @@ class Computer < Player
   def set_name
     ### TEMPORARY
     # self.name = NAMES.sample
-    self.name = %w(Hal Sonny).sample
+    # self.name = %w(Hal Sonny).sample
+    self.name = 'Hal'
+  end
+
+  def current_game_weight
+    NAME_TO_CURRENT_GAME_WEIGHT[name]
   end
 end
 
@@ -180,21 +200,26 @@ class Move
 end
 
 class MoveProbability
-  attr_accessor :wins, :losses
-  attr_reader :probability, :adjusted_probability
+  attr_accessor :wins, :losses, :adjusted_probability
+  attr_reader :probability, :base_rate, :success_rate_this_game
 
   def initialize(base_rate, current_game_weight)
     @base_rate = base_rate
     @success_rate_this_game = nil
     @current_game_weight = current_game_weight
     @adjusted_probability = base_rate
-    unless @current_game_weight.zero?
-      @wins = 0
-      @losses = 0
-    end
+    @wins = @losses = 0 unless @current_game_weight.zero?
   end
 
-  def adjust_probability
+  def update_probability
+    update_success_rate_this_game
+
+    @adjusted_probability = if @success_rate_this_game.nil?
+                              @base_rate
+                            else
+                              @base_rate * (1 - @current_game_weight) + \
+                                @success_rate_this_game * @current_game_weight
+                            end
     # binding.pry
     # @probability = @probability * (1 - @current_game_weight) + \
     #  success_rate_this_game * @current_game_weight
